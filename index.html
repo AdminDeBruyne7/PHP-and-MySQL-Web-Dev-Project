@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Movie Ticket Booking</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+  .card {
+    background: #22223b;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  }
+  h1 {
+    text-align: center;
+    color: #ffb703;
+    font-size: 1.5em;
+    margin-bottom: 20px;
+  }
+  label {
+    display: block;
+    margin-top: 14px;
+    font-size: 0.9em;
+    color: #c9c9e8;
+  }
+  input {
+    width: 100%;
+    padding: 8px 10px;
+    margin-top: 5px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #2e2e4d;
+    color: #fff;
+    box-sizing: border-box;
+  }
+  #childrenFields {
+    margin-top: 10px;
+  }
+  .child-input {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .child-input input {
+    flex: 1;
+  }
+  button {
+    margin-top: 20px;
+    width: 100%;
+    padding: 10px;
+    background: #ffb703;
+    color: #1a1a2e;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+  }
+  button:hover {
+    background: #fca311;
+  }
+  .error {
+    color: #ff6b6b;
+    margin-top: 10px;
+    font-size: 0.9em;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>🎬 Movie Ticket Booking</h1>
+
+  <!-- This form now POSTs directly to process_booking.php -->
+  <form id="ticketForm" action="process_booking.php" method="POST">
+    <label for="name">Your Name</label>
+    <input type="text" id="name" name="name" required>
+
+    <label for="age">Your Age</label>
+    <input type="number" id="age" name="age" min="0" max="120" required>
+
+    <label for="numChildren">Number of Children Under Your Care (if any)</label>
+    <input type="number" id="numChildren" min="0" max="20" value="0">
+
+    <div id="childrenFields"></div>
+
+    <div id="formError" class="error"></div>
+
+    <button type="submit">Book Ticket</button>
+  </form>
+</div>
+
+<script>
+  const numChildrenInput = document.getElementById('numChildren');
+  const childrenFieldsDiv = document.getElementById('childrenFields');
+  const form = document.getElementById('ticketForm');
+  const formError = document.getElementById('formError');
+
+  // Dynamically generate age inputs for each child
+  numChildrenInput.addEventListener('input', () => {
+    const count = parseInt(numChildrenInput.value) || 0;
+    childrenFieldsDiv.innerHTML = '';
+
+    for (let i = 0; i < count; i++) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'child-input';
+
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.placeholder = `Child ${i + 1} name`;
+      nameInput.className = 'childName';
+      nameInput.name = 'childName[]'; // array so PHP receives all children
+
+      const ageInput = document.createElement('input');
+      ageInput.type = 'number';
+      ageInput.placeholder = `Child ${i + 1} age`;
+      ageInput.min = 0;
+      ageInput.max = 17;
+      ageInput.className = 'childAge';
+      ageInput.name = 'childAge[]';
+
+      wrapper.appendChild(nameInput);
+      wrapper.appendChild(ageInput);
+      childrenFieldsDiv.appendChild(wrapper);
+    }
+  });
+
+  // Client-side validation. If everything checks out, the form is allowed
+  // to submit normally (POST) to process_booking.php — that's where the
+  // PHP + MySQLi work happens.
+  form.addEventListener('submit', (e) => {
+    formError.textContent = '';
+
+    const name = document.getElementById('name').value.trim();
+    const age = parseInt(document.getElementById('age').value);
+    const numChildren = parseInt(numChildrenInput.value) || 0;
+
+    if (!name) {
+      e.preventDefault();
+      formError.textContent = 'Please enter your name.';
+      return;
+    }
+    if (isNaN(age) || age < 0) {
+      e.preventDefault();
+      formError.textContent = 'Please enter a valid age.';
+      return;
+    }
+
+    const childNameInputs = document.querySelectorAll('.childName');
+    const childAgeInputs = document.querySelectorAll('.childAge');
+
+    for (let i = 0; i < numChildren; i++) {
+      const cName = childNameInputs[i].value.trim() || `Child ${i + 1}`;
+      const cAge = parseInt(childAgeInputs[i].value);
+
+      if (isNaN(cAge) || cAge < 0) {
+        e.preventDefault();
+        formError.textContent = `Please enter a valid age for ${cName}.`;
+        return;
+      }
+    }
+
+    // No preventDefault() here — validation passed, so the browser
+    // submits the form via POST to process_booking.php automatically.
+  });
+</script>
+
+</body>
+</html>

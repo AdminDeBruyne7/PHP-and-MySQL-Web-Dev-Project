@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Movie Ticket Booking</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+  .card {
+    background: #22223b;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  }
+  h1 {
+    text-align: center;
+    color: #ffb703;
+    font-size: 1.5em;
+    margin-bottom: 20px;
+  }
+  label {
+    display: block;
+    margin-top: 14px;
+    font-size: 0.9em;
+    color: #c9c9e8;
+  }
+  input {
+    width: 100%;
+    padding: 8px 10px;
+    margin-top: 5px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #2e2e4d;
+    color: #fff;
+    box-sizing: border-box;
+  }
+  #childrenFields {
+    margin-top: 10px;
+  }
+  .child-input {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .child-input input {
+    flex: 1;
+  }
+  button {
+    margin-top: 20px;
+    width: 100%;
+    padding: 10px;
+    background: #ffb703;
+    color: #1a1a2e;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+  }
+  button:hover {
+    background: #fca311;
+  }
+  #ticket {
+    margin-top: 25px;
+    background: #1a1a2e;
+    border: 1px dashed #ffb703;
+    border-radius: 10px;
+    padding: 18px;
+    display: none;
+  }
+  #ticket h2 {
+    margin-top: 0;
+    color: #ffb703;
+    font-size: 1.2em;
+  }
+  .notice {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9em;
+  }
+  .popcorn {
+    background: #2d6a4f;
+    color: #d8f3dc;
+  }
+  .supervise {
+    background: #6a040f;
+    color: #ffccd5;
+  }
+  .error {
+    color: #ff6b6b;
+    margin-top: 10px;
+    font-size: 0.9em;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>🎬 Movie Ticket Booking</h1>
+
+  <form id="ticketForm">
+    <label for="name">Your Name</label>
+    <input type="text" id="name" required>
+
+    <label for="age">Your Age</label>
+    <input type="number" id="age" min="0" max="120" required>
+
+    <label for="numChildren">Number of Children Under Your Care (if any)</label>
+    <input type="number" id="numChildren" min="0" max="20" value="0">
+
+    <div id="childrenFields"></div>
+
+    <div id="formError" class="error"></div>
+
+    <button type="submit">Book Ticket</button>
+  </form>
+
+  <div id="ticket"></div>
+</div>
+
+<script>
+  const numChildrenInput = document.getElementById('numChildren');
+  const childrenFieldsDiv = document.getElementById('childrenFields');
+  const form = document.getElementById('ticketForm');
+  const ticketDiv = document.getElementById('ticket');
+  const formError = document.getElementById('formError');
+
+  // Dynamically generate age inputs for each child
+  numChildrenInput.addEventListener('input', () => {
+    const count = parseInt(numChildrenInput.value) || 0;
+    childrenFieldsDiv.innerHTML = '';
+
+    for (let i = 0; i < count; i++) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'child-input';
+
+      const label = document.createElement('input');
+      label.type = 'text';
+      label.placeholder = `Child ${i + 1} name`;
+      label.className = 'childName';
+
+      const ageInput = document.createElement('input');
+      ageInput.type = 'number';
+      ageInput.placeholder = `Child ${i + 1} age`;
+      ageInput.min = 0;
+      ageInput.max = 17;
+      ageInput.className = 'childAge';
+
+      wrapper.appendChild(label);
+      wrapper.appendChild(ageInput);
+      childrenFieldsDiv.appendChild(wrapper);
+    }
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    formError.textContent = '';
+
+    const name = document.getElementById('name').value.trim();
+    const age = parseInt(document.getElementById('age').value);
+    const numChildren = parseInt(numChildrenInput.value) || 0;
+
+    if (!name) {
+      formError.textContent = 'Please enter your name.';
+      return;
+    }
+    if (isNaN(age) || age < 0) {
+      formError.textContent = 'Please enter a valid age.';
+      return;
+    }
+
+    // Collect children info
+    const childNameInputs = document.querySelectorAll('.childName');
+    const childAgeInputs = document.querySelectorAll('.childAge');
+    const children = [];
+
+    for (let i = 0; i < numChildren; i++) {
+      const cName = childNameInputs[i].value.trim() || `Child ${i + 1}`;
+      const cAge = parseInt(childAgeInputs[i].value);
+
+      if (isNaN(cAge) || cAge < 0) {
+        formError.textContent = `Please enter a valid age for ${cName}.`;
+        return;
+      }
+      children.push({ name: cName, age: cAge });
+    }
+
+    renderTicket(name, age, children);
+  });
+
+  function renderTicket(name, age, children) {
+    let html = `<h2>🎟️ Your Ticket</h2>`;
+    html += `<p><strong>Name:</strong> ${escapeHTML(name)}</p>`;
+    html += `<p><strong>Age:</strong> ${age}</p>`;
+
+    // Notification: user themself is under 18
+    if (age < 18) {
+      html += `<div class="notice popcorn">🍿 You're under 18 — enjoy free popcorn with your ticket!</div>`;
+    }
+
+    if (children.length > 0) {
+      html += `<p><strong>Children under your care:</strong></p><ul>`;
+      let anyChildUnder18 = false;
+
+      children.forEach(child => {
+        html += `<li>${escapeHTML(child.name)} (age ${child.age})`;
+        if (child.age < 18) {
+          html += ` — 🍿 free popcorn!`;
+          anyChildUnder18 = true;
+        }
+        html += `</li>`;
+      });
+      html += `</ul>`;
+
+      children.forEach(child => {
+        if (child.age < 18) {
+          html += `<div class="notice popcorn">🍿 ${escapeHTML(child.name)} gets free popcorn (under 18)!</div>`;
+        }
+      });
+
+      // Reminder for adults accompanied by children
+      if (age >= 18 && anyChildUnder18) {
+        html += `<div class="notice supervise">👀 Reminder: Please supervise the children in your care throughout the movie.</div>`;
+      }
+    }
+
+    ticketDiv.innerHTML = html;
+    ticketDiv.style.display = 'block';
+  }
+
+  function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+
+</body>
+</html>
